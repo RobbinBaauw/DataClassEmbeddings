@@ -13,10 +13,19 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
+
+    testImplementation(kotlin("reflect"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.2")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.2.9")
 }
 
 kapt {
     correctErrorTypes = true
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
 
 tasks {
