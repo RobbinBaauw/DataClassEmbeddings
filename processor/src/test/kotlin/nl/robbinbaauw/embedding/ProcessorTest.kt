@@ -26,12 +26,17 @@ internal class ProcessorTest {
 
     @Test
     fun testGenerateProxyGetter() {
-        val result = compile("""
+        val result = compile(
+            """
             import nl.robbinbaauw.embedding.Embed
-            
+            import nl.robbinbaauw.embedding.Embeddable
+
+            @Embeddable
             data class BaseClass(val id: Int)
+            
             data class TestClass(@field:Embed val testClass: BaseClass, val otherNumber: Int)
-        """)
+        """
+        )
         Assertions.assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
 
         val clazz = result.classLoader.loadClass("TestClass")
