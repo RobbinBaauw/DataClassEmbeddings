@@ -8,7 +8,9 @@ import javax.annotation.processing.SupportedSourceVersion
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
+import javax.lang.model.element.Modifier
 import javax.lang.model.element.TypeElement
+import javax.lang.model.type.TypeKind
 import javax.lang.model.util.ElementFilter
 import javax.tools.StandardLocation
 
@@ -24,7 +26,7 @@ class Processor : AbstractProcessor() {
         }
     }
 
-    data class Field(val name: String)
+    data class Field(val name: String, val type: String, val isFinal: Boolean)
 
     override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
         val classFields: MutableMap<String, List<Field>> = HashMap()
@@ -32,7 +34,21 @@ class Processor : AbstractProcessor() {
         roundEnv.getElementsAnnotatedWith(Embeddable::class.java).forEach { element ->
             val elementFields = ElementFilter.fieldsIn(element.enclosedElements)
             val fields = elementFields.map {
-                Field(it.simpleName.toString())
+                val isFinal = it.modifiers.contains(Modifier.FINAL)
+
+                val type = when (it.asType().kind) {
+                    TypeKind.BOOLEAN -> "Boolean"
+                    TypeKind.BYTE -> "Byte"
+                    TypeKind.SHORT -> "Short"
+                    TypeKind.INT -> "Int"
+                    TypeKind.LONG -> "Long"
+                    TypeKind.CHAR -> "Char"
+                    TypeKind.FLOAT -> "Float"
+                    TypeKind.DOUBLE -> "Double"
+                    else -> it.asType().toString()
+                }
+
+                Field(it.simpleName.toString(), type, isFinal)
             }
 
             classFields[element.asType().toString()] = fields
@@ -48,8 +64,32 @@ class Processor : AbstractProcessor() {
             val fieldTypeName = element.asType().toString()
             val currFields = classFields[fieldTypeName] ?: throw IllegalStateException("Did not parse type name $fieldTypeName. Is it marked @Embeddable?")
 
-            val getters = currFields.joinToString(separator = "\n") { field ->
-                "val $className.${field.name} get() = ${element.simpleName}.${field.name}"
+            fun getSetter(field: Field): String {
+                return if (!field.isFinal) {
+                    """
+                    |
+                    |    set(value) {
+                    |        ${element.simpleName}.${field.name} = value
+                    |    }
+                    """.trimMargin()
+                } else {
+                    ""
+                }
+            }
+
+            fun getModifier(field: Field): String {
+                return if (field.isFinal) {
+                    "val"
+                } else {
+                    "var"
+                }
+            }
+
+            val gettersAndSetters = currFields.joinToString(separator = "\n\n") { field ->
+                val setter = getSetter(field)
+                """ |${getModifier(field)} $className.${field.name}: ${field.type}
+                    |    get() = ${element.simpleName}.${field.name}$setter
+                """.trimMargin()
             }
 
             processingEnv.filer
@@ -57,11 +97,11 @@ class Processor : AbstractProcessor() {
                 .openWriter()
                 .use {
                     it.write(
-                    """
-                    ${if (packageName.isNotEmpty()) "package $packageName" else "" }
-                    
-                    $getters
-                    """.trimIndent()
+                    """ 
+                    |${if (packageName.isNotEmpty()) "package $packageName" else "" }
+                    |
+                    |$gettersAndSetters
+                    """.trimMargin()
                     )
                 }
         }

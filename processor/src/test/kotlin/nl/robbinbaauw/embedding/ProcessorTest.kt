@@ -32,7 +32,7 @@ internal class ProcessorTest {
             import nl.robbinbaauw.embedding.Embeddable
 
             @Embeddable
-            data class BaseClass(val id: Int)
+            data class BaseClass(val id: Int, var number2: Int)
             
             data class TestClass(@field:Embed val testClass: BaseClass, val otherNumber: Int)
         """
