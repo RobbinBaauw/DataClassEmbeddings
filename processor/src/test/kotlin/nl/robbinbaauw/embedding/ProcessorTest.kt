@@ -25,7 +25,7 @@ internal class ProcessorTest {
     }
 
     @Test
-    fun testGenerateProxyGetter() {
+    fun testGenerateProxyGetterSetter() {
         val result = compile(
             """
             import nl.robbinbaauw.embedding.Embed
@@ -42,7 +42,31 @@ internal class ProcessorTest {
         val clazz = result.classLoader.loadClass("TestClass")
         val kClazz = Reflection.createKotlinClass(clazz)
 
-        val idMembers = kClazz.declaredMembers.filter { it.name == "id" }
-        Assertions.assertEquals(1, idMembers.size)
+        // TODO add assertions
     }
+
+    @Test
+    fun testGenerateProxyFunction() {
+        val result = compile(
+            """
+            import nl.robbinbaauw.embedding.Embed
+            import nl.robbinbaauw.embedding.Embeddable
+
+            @Embeddable
+            data class BaseClass(val id: Int) {
+                fun <X: Int> x(a: Int, b: BaseClass): String {}
+                fun y() {}
+            }
+            
+            data class TestClass(@field:Embed val testClass: BaseClass, val otherNumber: Int)
+        """
+        )
+        Assertions.assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
+
+        val clazz = result.classLoader.loadClass("TestClass")
+        val kClazz = Reflection.createKotlinClass(clazz)
+
+        // TODO add assertions
+    }
+
 }
