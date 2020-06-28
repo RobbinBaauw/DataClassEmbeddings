@@ -1,8 +1,8 @@
 package nl.robbinbaauw.embedding
 
-@Target(AnnotationTarget.FIELD)
+@Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
-annotation class Embed
+annotation class HasEmbeds
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)

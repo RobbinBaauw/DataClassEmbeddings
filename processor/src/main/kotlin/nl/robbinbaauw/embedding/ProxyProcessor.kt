@@ -1,8 +1,16 @@
 package nl.robbinbaauw.embedding
 
-import javax.lang.model.element.Element
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.metadata.ImmutableKmClass
+import kotlinx.metadata.ClassName
 
-interface ProxyProcessor<X : Processor.Proxy> {
-    fun parseType(embeddedClass: Element): List<X>
-    fun writeType(type: Processor.Proxy, embeddedField: Element, contextClassName: String): String?
+interface ProxyProcessor {
+    fun parseType(embeddedClass: ImmutableKmClass, typeSpec: TypeSpec)
+    fun addTypes(
+        classWithEmbeds: ImmutableKmClass,
+        typeSpec: TypeSpec,
+        embeddedProperties: Map<String, ClassName>,
+        builder: FileSpec.Builder
+    )
 }

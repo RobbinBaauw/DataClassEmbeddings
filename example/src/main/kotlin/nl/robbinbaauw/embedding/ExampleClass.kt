@@ -6,13 +6,16 @@ data class X(val y: Double) {
 
 @Embeddable
 data class BaseClass(val id: Int, var number2: Int, var x: X?) {
-    fun <X: Int> x(a: Int, b: BaseClass): List<String>? {
+    fun y(a: Int, b: BaseClass): List<String>? {
         return emptyList()
     }
+
+    fun z() {}
 }
 
+@HasEmbeds
 data class TestClass(
-    @field:Embed val testClass: BaseClass,
+    val testClass: BaseClass,
     val otherNumber: Int
 )
 

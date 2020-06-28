@@ -13,6 +13,9 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
+    implementation("com.squareup:kotlinpoet:1.6.0")
+    implementation("com.squareup:kotlinpoet-metadata:1.6.0")
+    implementation("com.squareup:kotlinpoet-metadata-specs:1.6.0")
 
     testImplementation(kotlin("reflect"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.2")
@@ -31,6 +34,7 @@ tasks.withType<Test> {
 tasks {
     compileKotlin {
         kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.freeCompilerArgs += "-Xopt-in=com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview"
     }
 
     compileTestKotlin {

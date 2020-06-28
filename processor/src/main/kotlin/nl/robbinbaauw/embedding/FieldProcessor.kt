@@ -1,49 +1,62 @@
 package nl.robbinbaauw.embedding
 
-import javax.lang.model.element.Element
-import javax.lang.model.element.Modifier
-import javax.lang.model.util.ElementFilter
+import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.metadata.ImmutableKmClass
+import com.squareup.kotlinpoet.metadata.isVal
+import com.squareup.kotlinpoet.metadata.isVar
+import kotlinx.metadata.ClassName as KClassName
 
-class FieldProcessor : ProxyProcessor<Processor.Proxy.Field> {
-    override fun parseType(embeddedClass: Element): List<Processor.Proxy.Field> {
-        val classFields = ElementFilter.fieldsIn(embeddedClass.enclosedElements)
-        return classFields.map {
-            val isFinal = it.modifiers.contains(Modifier.FINAL)
-            val type = parseType(it, it.asType())
+private data class Field(val ps: PropertySpec, val isFinal: Boolean)
 
-            Processor.Proxy.Field(Processor.Type(it.simpleName.toString(), type), isFinal)
+class FieldProcessor : ProxyProcessor {
+    private val classFieldMap: MutableMap<String, List<Field>> = HashMap()
+
+    override fun parseType(embeddedClass: ImmutableKmClass, typeSpec: TypeSpec) {
+        classFieldMap[embeddedClass.name] = embeddedClass.properties.mapNotNull { property ->
+            if (!property.isVal && !property.isVar) return@mapNotNull null
+
+            val propertySpec = typeSpec.propertySpecs.first { it.name == property.name }
+            val isFinal = property.isVal
+            Field(propertySpec, isFinal)
         }
     }
 
-    override fun writeType(type: Processor.Proxy, embeddedField: Element, contextClassName: String): String? {
-        if (type is Processor.Proxy.Field) {
-            val setter = getVariableSetter(embeddedField, type)
-            return """  |${getVariableModifier(type)} $contextClassName.${type.type.name}: ${type.type.type}
-                        |    get() = ${embeddedField.simpleName}.${type.type.name}$setter
-                    """.trimMargin()
-        }
+    override fun addTypes(
+        classWithEmbeds: ImmutableKmClass,
+        typeSpec: TypeSpec,
+        embeddedProperties: Map<String, KClassName>,
+        builder: FileSpec.Builder
+    ) {
+        embeddedProperties.forEach { (propertyWithEmbed, clazz) ->
+            val fields = classFieldMap[clazz] ?: return@forEach
+            fields.forEach { field ->
+                val packageClassName = ClassName.bestGuess(classWithEmbeds.name.replace("/", "."))
+                val proxyFieldName = "${propertyWithEmbed}.${field.ps.name}"
 
-        return null
-    }
+                val propertySpec = PropertySpec
+                    .builder(field.ps.name, field.ps.type)
+                    .receiver(packageClassName)
+                    .mutable(!field.isFinal)
+                    .getter(
+                        FunSpec.getterBuilder()
+                            .addStatement("return $proxyFieldName")
+                            .build()
+                    )
 
-    private fun getVariableSetter(embeddedField: Element, field: Processor.Proxy.Field): String {
-        return if (!field.isFinal) {
-            """
-        |
-        |    set(value) {
-        |        ${embeddedField.simpleName}.${field.type.name} = value
-        |    }
-        """.trimMargin()
-        } else {
-            ""
-        }
-    }
+                val builtSpec = if (!field.isFinal) {
+                    propertySpec.setter(
+                        FunSpec.setterBuilder()
+                            .addParameter("value", field.ps.type)
+                            .addStatement("$proxyFieldName = value")
+                            .build()
+                    )
+                        .build()
+                } else {
+                    propertySpec.build()
+                }
 
-    private fun getVariableModifier(field: Processor.Proxy.Field): String {
-        return if (field.isFinal) {
-            "val"
-        } else {
-            "var"
+                builder.addProperty(builtSpec)
+            }
         }
     }
 }
