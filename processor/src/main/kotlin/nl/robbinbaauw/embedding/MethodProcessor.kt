@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.metadata.ImmutableKmClass
+import javax.lang.model.element.Element
 import kotlinx.metadata.ClassName as KClassName
 
 private data class Method(val fs: FunSpec)
@@ -12,7 +13,7 @@ private data class Method(val fs: FunSpec)
 class MethodProcessor : ProxyProcessor {
     private val classMethodMap: MutableMap<String, List<Method>> = HashMap()
 
-    override fun parseType(embeddedClass: ImmutableKmClass, typeSpec: TypeSpec) {
+    override fun parseType(embeddedClass: ImmutableKmClass, typeSpec: TypeSpec, classElement: Element) {
         classMethodMap[embeddedClass.name] = typeSpec.funSpecs.map {
             Method(it)
         }

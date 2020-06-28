@@ -1,20 +1,15 @@
-package nl.robbinbaauw.embedding
+## DataClassEmbeddings
 
+Provides the option to embed data classes like in Golang.
+
+### Example
+```kotlin
 data class X(val y: Double) {
     fun hi() {}
 }
 
 @Embeddable
-data class BaseClass(
-    @field:TestAnnotation
-    val id: Int,
-
-    @field:TestAnnotation
-    var number2: Int,
-
-    @field:TestAnnotation
-    var x: X?
-) {
+data class BaseClass(val id: Int, var number2: Int, var x: X?) {
     fun y(a: Int, b: BaseClass): List<String>? {
         return emptyList()
     }
@@ -27,7 +22,6 @@ data class BaseClass(
 @HasEmbeds
 data class TestClass(
     val testClass: BaseClass,
-    val id: Int,
     val otherNumber: Int
 ) {
     fun z() {
@@ -36,10 +30,11 @@ data class TestClass(
 }
 
 fun main() {
-    val x = TestClass(BaseClass(1, 2, X(1.0)), 2, 2)
+    val x = TestClass(BaseClass(1, 2, X(1.0)), 2)
     println(x.id)
     println(x.x?.y)
     x.number2 = 1
 
-    x.z()
+    x.z() // prints 1
 }
+```

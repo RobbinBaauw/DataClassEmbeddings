@@ -1,6 +1,7 @@
 package nl.robbinbaauw.embedding
 
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.metadata.hasAnnotations
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
 import kotlinx.metadata.KmClassifier
@@ -23,7 +24,7 @@ class Processor : AbstractProcessor() {
                 val metadataAnnotation = element.getAnnotation(Metadata::class.java)
                 val immutableKmClass = metadataAnnotation.toImmutableKmClass()
                 val typeSpec = immutableKmClass.toTypeSpec(null)
-                processors.forEach { it.parseType(immutableKmClass, typeSpec) }
+                processors.forEach { it.parseType(immutableKmClass, typeSpec, element) }
             }
 
         roundEnv
